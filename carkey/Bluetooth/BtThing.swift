@@ -625,7 +625,7 @@ extension BluetoothManager {
 		DispatchQueue.main.async {
 			self.state = .disconnected
 			self.isConnected = false
-			if self.autoUnlockState == .unlocked || self.autoUnlockState == .authorizing {
+			if self.autoUnlockState == .unlocked || self.autoUnlockState == .unlocking {
 				self.autoUnlockState = .idle
 			}
 		}

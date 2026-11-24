@@ -178,12 +178,10 @@
 				331325DB2E6E869100E86E52 /* Sources */,
 				331325DC2E6E869100E86E52 /* Frameworks */,
 				331325DD2E6E869100E86E52 /* Resources */,
-				33F907A02FDA56CD00741A4F /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				33F9079E2FDA56CD00741A4F /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				331325E12E6E869100E86E52 /* carkey */,

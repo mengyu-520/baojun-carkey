@@ -1,0 +1,19 @@
+# macOS / Xcode
+.DS_Store
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# 构建产物
+*.ipa
+Payload/
+*.app
+*.dSYM
+
+# SPM 缓存
+.swiftpm/
+
+# 日志
+build.log

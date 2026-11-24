@@ -1,0 +1,87 @@
+name: Build unsigned IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check sources present
+        id: check
+        run: |
+          if [ ! -f carkey.xcodeproj/project.pbxproj ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "sources not uploaded yet, skip build"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Show Xcode
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          ls /Applications | grep -i Xcode || true
+          for candidate in /Applications/Xcode_16.4.app /Applications/Xcode_16.3.app /Applications/Xcode_16.2.app /Applications/Xcode.app; do
+            if [ -d "$candidate" ]; then sudo xcode-select -s "$candidate"; break; fi
+          done
+          xcodebuild -version
+
+      - name: Resolve Swift packages
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          xcodebuild -resolvePackageDependencies -project carkey.xcodeproj -scheme carkey
+
+      - name: Build app (unsigned)
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project carkey.xcodeproj \
+            -scheme carkey \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            clean build 2>&1 | tee build.log
+
+      - name: Package .ipa
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          APP_PATH="build/Build/Products/Release-iphoneos/carkey.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "app not found, searching..."
+            APP_PATH=$(find build/Build/Products -maxdepth 3 -name "carkey.app" -type d | head -n 1)
+          fi
+          echo "using $APP_PATH"
+          rm -rf Payload baojun-carkey-unsigned.ipa
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          zip -qry baojun-carkey-unsigned.ipa Payload
+          ls -lh baojun-carkey-unsigned.ipa
+
+      - name: Upload IPA
+        if: steps.check.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: baojun-carkey-unsigned-ipa
+          path: baojun-carkey-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Upload build log
+        if: always() && steps.check.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore

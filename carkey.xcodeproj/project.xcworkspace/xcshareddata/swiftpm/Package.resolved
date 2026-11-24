@@ -1,0 +1,33 @@
+{
+  "originHash" : "18514c73583df4aef38a92d594c448edd3674f5cbb328fd93584b4a8c5608795",
+  "pins" : [
+    {
+      "identity" : "cryptoswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/krzyzanowskim/CryptoSwift",
+      "state" : {
+        "revision" : "e45a26384239e028ec87fbcc788f513b67e10d8f",
+        "version" : "1.9.0"
+      }
+    },
+    {
+      "identity" : "logview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/alexejn/LogView",
+      "state" : {
+        "revision" : "7f031eb8f0d9570e4d8a10b6291dcc94a65b3d1b",
+        "version" : "1.0.6"
+      }
+    },
+    {
+      "identity" : "swiftybluetooth",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jordanebelanger/SwiftyBluetooth",
+      "state" : {
+        "revision" : "83694e28f40da9c60457228883166e3ca55a70c1",
+        "version" : "3.1.0"
+      }
+    }
+  ],
+  "version" : 3
+}

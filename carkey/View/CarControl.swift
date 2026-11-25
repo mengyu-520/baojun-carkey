@@ -72,11 +72,9 @@ struct CarControlsView: View {
                     VStack(spacing: 18) {
                         HeaderView()
 
-                        StatusCard(status: carStatus)
-
-                        Car3DCard(status: carStatus, isLocked: carStatus.isLocked)
-
-                        TirePressureCard(pressure: dataManager.appData.tirePressure)
+                        Car3DCard(status: carStatus,
+                                  isLocked: carStatus.isLocked,
+                                  tire: dataManager.appData.tirePressure)
 
                         BleSignalCard()
 

@@ -76,6 +76,8 @@ struct CarControlsView: View {
                                   isLocked: carStatus.isLocked,
                                   tire: dataManager.appData.tirePressure)
 
+                        RealtimeBadge()
+
                         BleSignalCard()
 
                         PrimaryControlsView(
@@ -541,5 +543,50 @@ struct CarLocationView: View {
 struct CarControlsView_Previews: PreviewProvider {
     static var previews: some View {
         CarControlsView()
+    }
+}
+
+// MARK: - 云端实时推送状态（MQTT）
+
+struct RealtimeBadge: View {
+
+    @ObservedObject private var dataManager = DataManager.shared
+
+    private var color: Color {
+        if dataManager.mqttConnected { return .green }
+        if dataManager.mqttState.contains("正在连接") || dataManager.mqttState.contains("后重连") { return .orange }
+        return .red
+    }
+
+    private var detail: String {
+        guard let date = dataManager.lastRealtimeAt else { return dataManager.mqttState }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        return "\(dataManager.mqttState) · \(formatter.string(from: date))"
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(color)
+                .frame(width: 7, height: 7)
+            Text("云端实时")
+                .font(.caption2)
+                .foregroundColor(.white.opacity(0.7))
+            Text(detail)
+                .font(.caption2)
+                .foregroundColor(.white.opacity(0.45))
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            Button {
+                dataManager.startRealtime()
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.caption2)
+                    .foregroundColor(.white.opacity(0.6))
+            }
+        }
+        .padding(.horizontal, 4)
+        .padding(.top, -6)
     }
 }

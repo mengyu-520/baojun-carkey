@@ -239,6 +239,7 @@ extension DataManager {
                 self.fetchAndLoadCarData(vin: vin)
                 self.fetchAndLoadKeyData(vin: vin)
                 self.fetchAndLoadTirePressure(vin: vin)
+                self.startRealtime()
                 // 给状态/钥匙请求一点时间落地
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     completion(.success(()))

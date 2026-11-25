@@ -194,6 +194,13 @@ struct CarStatus: Codable {
         return values[key]?.text ?? ""
     }
 
+    /// MQTT 推送的状态补丁合并
+    mutating func apply(patch: [String: String]) {
+        for (key, value) in patch {
+            values[key] = .text(value)
+        }
+    }
+
     // 界面上用得到的派生值
     var statusName: String { self["statusName"].isEmpty ? self["statusToast"] : self["statusName"] }
     var batterySOCPercentage: Int? { Int(self["batterySoc"]) }
@@ -350,6 +357,11 @@ class DataManager: ObservableObject {
         }
     }
 
+    /// 云端 MQTT 推送状态
+    @Published var mqttState: String = "未连接"
+    @Published var mqttConnected: Bool = false
+    @Published var lastRealtimeAt: Date?
+
     let sgmwUnifiedOAuth = SGMWUnifiedOAuth()
 
     private static func archiveURL() -> URL {
@@ -428,6 +440,7 @@ extension DataManager {
             self.appData.carData = nil
         }
         sgmwUnifiedOAuth.clearToken()
+        stopRealtime()
         BluetoothManager.shared.disconnectTarget()
         WatchSyncManager.shared.sendAppData(AppData())
         loggerData.info("logged out")
@@ -488,6 +501,73 @@ extension DataManager {
             WatchSyncManager.shared.sendAppData(self.appData)
         } catch {
             loggerData.error("failed to parse car data json: \(error)")
+        }
+    }
+}
+
+// MARK: - 云端 MQTT 实时推送
+
+extension DataManager {
+
+    /// 登录并拿到 VIN 之后启动实时推送
+    func startRealtime() {
+        let vin = self.vin
+        guard vin.isEmpty == false else {
+            loggerNet.warning("startRealtime skipped: no vin")
+            return
+        }
+
+        let client = BaojunMQTTClient.shared
+        client.onStatusPatch = { [weak self] patch in
+            self?.applyRealtimePatch(patch)
+        }
+        client.onControlResult = { result in
+            loggerNet.info("MQTT 控制回执 serviceCode=\(result["serviceCode"] ?? "") resultCode=\(result["resultCode"] ?? "") message=\(result["message"] ?? "")")
+        }
+        client.onConnectionState = { [weak self] text, connected in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                self.mqttState = text
+                self.mqttConnected = connected
+            }
+        }
+        client.start(vin: vin)
+        loggerNet.info("MQTT 实时推送启动 vin=\(vin)")
+    }
+
+    func stopRealtime() {
+        BaojunMQTTClient.shared.stop()
+        mqttConnected = false
+        mqttState = "未连接"
+    }
+
+    /// 把推送字段合并进车辆状态，界面会随之刷新（含 3D 门/窗动画）
+    func applyRealtimePatch(_ patch: [String: String]) {
+        guard patch.isEmpty == false else { return }
+
+        var normalized = patch
+        if let ac = patch["acStatus"], patch["accOnOff"] == nil {
+            normalized["accOnOff"] = ac == "0" ? "0" : "1"
+        }
+
+        let windowKeys = ["window1Status", "window2Status", "window3Status", "window4Status"]
+        let degreeKeys = ["window1OpenDegree", "window2OpenDegree", "window3OpenDegree", "window4OpenDegree"]
+        let anyOpen = windowKeys.contains { patch[$0] != nil && patch[$0] != "0" }
+            || degreeKeys.contains { patch[$0] != nil && patch[$0] != "0" }
+        if windowKeys.contains(where: { patch[$0] != nil }) || degreeKeys.contains(where: { patch[$0] != nil }) {
+            normalized["windowOpenStatus"] = anyOpen ? "1" : "0"
+            normalized["windowStatus"] = anyOpen ? "1" : "0"
+        }
+
+        DispatchQueue.main.async {
+            if var car = self.appData.carData {
+                var status = car.carStatus
+                status.apply(patch: normalized)
+                car = CarData(carStatus: status, carInfo: car.carInfo)
+                self.appData.carData = car
+            }
+            self.lastRealtimeAt = Date()
+            loggerNet.debug("MQTT 状态写入: \(normalized.keys.sorted().joined(separator: ","))")
         }
     }
 }

@@ -28,6 +28,15 @@ struct carkeyApp: App {
 		if ProcessInfo.processInfo.arguments.contains("-demoMode") {
 			DataManager.shared.injectMockData()
 			BluetoothManager.shared.enableDemoSignal()
+			DataManager.shared.mqttConnected = true
+			DataManager.shared.mqttState = "已连接，实时状态推送中"
+			DataManager.shared.lastRealtimeAt = Date()
+		} else if DataManager.shared.isLoggedIn {
+			DataManager.shared.startRealtime()
+		}
+		#else
+		if DataManager.shared.isLoggedIn {
+			DataManager.shared.startRealtime()
 		}
 		#endif
 	}

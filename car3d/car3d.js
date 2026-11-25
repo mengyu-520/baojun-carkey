@@ -117,6 +117,38 @@
     return buffer;
   }
 
+  // 模型尺寸归一化 + 自动取景，避免不同导出的单位/原点导致满屏只有一个车头
+  function fitModel(root) {
+    var box = new THREE.Box3().setFromObject(root);
+    var size = box.getSize(new THREE.Vector3());
+    var center = box.getCenter(new THREE.Vector3());
+    var maxDim = Math.max(size.x, size.z) || 1;
+    var scale = 6.4 / maxDim;
+
+    root.scale.setScalar(scale);
+    root.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
+
+    var box2 = new THREE.Box3().setFromObject(root);
+    var size2 = box2.getSize(new THREE.Vector3());
+    var radius = 0.5 * Math.sqrt(size2.x * size2.x + size2.y * size2.y + size2.z * size2.z);
+    var fov = camera.fov * Math.PI / 180;
+    var distance = radius / Math.sin(fov / 2) * 1.3;
+
+    HOME_TARGET.set(0, size2.y * 0.55, 0);
+    HOME_POS.set(-distance * 0.60, size2.y * 0.55 + distance * 0.40, distance * 0.62);
+
+    camera.position.copy(HOME_POS);
+    controls.target.copy(HOME_TARGET);
+    controls.minDistance = radius * 0.85;
+    controls.maxDistance = radius * 3.4;
+    controls.update();
+
+    shadow.geometry.dispose();
+    shadow.geometry = new THREE.CircleGeometry(radius * 0.78, 48);
+    shadow.position.y = 0;
+    shadow.scale.set(1, 1, 1);
+  }
+
   function boot() {
     if (!window.CAR_GLB_BASE64) {
       stage('error: 模型数据缺失');
@@ -130,6 +162,7 @@
       gltfRoot = gltf.scene;
       animations = gltf.animations || [];
       scene.add(gltfRoot);
+      fitModel(gltfRoot);
       mixer = new THREE.AnimationMixer(gltfRoot);
 
       for (var i = 0; i < SIDES.length; i++) {
@@ -155,6 +188,16 @@
       ready = true;
       stage('model-ready clips=' + animations.length);
       post('ready');
+
+      if (window.location.search.indexOf('demo') >= 0) {
+        setTimeout(function () {
+          window.Car3D.applyStatus({
+            doors: { leftFront: true, rightRear: true, tailgate: true },
+            windows: { leftFront: true, rightFront: true },
+            lights: { running: true }
+          });
+        }, 400);
+      }
     }, function (error) {
       stage('error: ' + (error && error.message ? error.message : error));
     });

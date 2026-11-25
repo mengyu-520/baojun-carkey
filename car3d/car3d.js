@@ -1,8 +1,13 @@
 // 车牌 3D 卡片（iOS 内嵌版）：只保留模型与状态驱动，UI 由 SwiftUI 负责
 
+const stage = (text) => { try { window.__stage(text); } catch (e) {} };
+stage('module-start');
+
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+stage('modules-ok three=' + (THREE.REVISION || '?'));
 
 const host = document.querySelector('#canvas');
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -98,7 +103,9 @@ function postReady(message) {
 }
 
 async function boot() {
+  stage('loading-model');
   const gltf = await new GLTFLoader().loadAsync('./model/car.glb');
+  stage('model-loaded clips=' + (gltf.animations ? gltf.animations.length : 0));
   model = gltf;
   scene.add(gltf.scene);
   gltf.scene.traverse(obj => {
@@ -133,6 +140,7 @@ async function boot() {
 
 boot().catch(error => {
   console.error(error);
+  stage('error: ' + (error && error.message ? error.message : error));
   postReady('error:' + (error && error.message ? error.message : error));
 });
 

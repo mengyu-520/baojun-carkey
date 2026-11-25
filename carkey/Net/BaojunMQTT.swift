@@ -238,7 +238,8 @@ final class BaojunMQTTClient {
         header.append(payload)
         send(header)
         startReceiveLoop()
-        loggerNet.info("MQTT CONNECT 已发送 clientId=\(currentClientId)")
+        let sentClientId = currentClientId
+        loggerNet.info("MQTT CONNECT 已发送 clientId=\(sentClientId)")
     }
 
     private func subscribe() {

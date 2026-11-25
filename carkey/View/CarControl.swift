@@ -74,7 +74,9 @@ struct CarControlsView: View {
 
                         StatusCard(status: carStatus)
 
-                        CarDisplayView().frame(height: 130)
+                        Car3DCard(status: carStatus, isLocked: carStatus.isLocked)
+
+                        TirePressureCard(pressure: dataManager.appData.tirePressure)
 
                         BleSignalCard()
 

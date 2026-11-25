@@ -88,8 +88,10 @@ jobs:
           xcrun simctl terminate "$UDID" com.mengyu.baojuncarkey || true
           sleep 3
           xcrun simctl launch "$UDID" com.mengyu.baojuncarkey -demoMode || true
-          sleep 10
+          sleep 25
           xcrun simctl io "$UDID" screenshot screenshots/02-carcontrol.png
+          sleep 12
+          xcrun simctl io "$UDID" screenshot screenshots/03-carcontrol-late.png
           ls -lh screenshots
 
       - name: Collect crash log if any

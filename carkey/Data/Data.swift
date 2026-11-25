@@ -316,6 +316,28 @@ struct AppData: Codable {
     var userData: UserData?
     var carKeyData: CarKeyData?
     var carData: CarData?
+    var tirePressure: TirePressure?
+}
+
+/// 胎压（单位 kPa），取自 /junApi/sgmw/car/info/tire/pressure
+struct TirePressure: Codable, Equatable {
+    var lf: Double?
+    var rf: Double?
+    var lr: Double?
+    var rr: Double?
+    var temp: Double?
+
+    init(lf: Double? = nil, rf: Double? = nil, lr: Double? = nil, rr: Double? = nil, temp: Double? = nil) {
+        self.lf = lf
+        self.rf = rf
+        self.lr = lr
+        self.rr = rr
+        self.temp = temp
+    }
+
+    var hasValue: Bool {
+        [lf, rf, lr, rr].contains { $0 != nil }
+    }
 }
 
 class DataManager: ObservableObject {

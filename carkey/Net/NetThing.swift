@@ -40,6 +40,8 @@ enum BaojunEndpoint {
     case ignitionAuthorize(vin: String)
     /// 空调
     case airCondition(vin: String, on: Bool, temperature: Int, blower: Int, duration: Int, heat: Bool)
+    /// 胎压
+    case tirePressure(vin: String)
 }
 
 extension BaojunEndpoint: EndpointType {
@@ -61,6 +63,8 @@ extension BaojunEndpoint: EndpointType {
             return "/junApi/sgmw/car/control/ignition/authorize"
         case .airCondition:
             return "/junApi/sgmw/car/control/acc"
+        case .tirePressure:
+            return "/junApi/sgmw/car/info/tire/pressure"
         }
     }
 
@@ -93,6 +97,8 @@ extension BaojunEndpoint: EndpointType {
                 "blowerLvl": String(blower),
                 "duration": String(duration)
             ]
+        case .tirePressure(let vin):
+            return ["vin": vin]
         }
     }
 }
@@ -232,6 +238,7 @@ extension DataManager {
                 self.bindVehicle(vin: vin)
                 self.fetchAndLoadCarData(vin: vin)
                 self.fetchAndLoadKeyData(vin: vin)
+                self.fetchAndLoadTirePressure(vin: vin)
                 // 给状态/钥匙请求一点时间落地
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     completion(.success(()))
@@ -306,6 +313,41 @@ extension DataManager {
         }
     }
 
+    /// 胎压（4 轮 + 轮胎温度）
+    func fetchAndLoadTirePressure(vin explicitVin: String? = nil) {
+        let vin = (explicitVin?.isEmpty == false ? explicitVin! : self.vin)
+        guard vin.isEmpty == false else {
+            loggerNet.error("cannot fetch tire pressure without vin")
+            return
+        }
+        NetworkManager.shared.requestBaojun(BaojunEndpoint.tirePressure(vin: vin)) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let data):
+                    guard let json: Any = try? JSONSerialization.jsonObject(with: data) else { return }
+                    if let message = DataManager.errorMessage(from: json) {
+                        loggerNet.error("tire pressure failed: \(message)")
+                        return
+                    }
+                    let lf = DataManager.numberValue(in: json, keys: ["lfTirPrsVal", "lfTirePressure"])
+                    let rf = DataManager.numberValue(in: json, keys: ["rfTirPrVal", "rfTirePressure"])
+                    let lr = DataManager.numberValue(in: json, keys: ["lrTirPrVal", "lrTirePressure"])
+                    let rr = DataManager.numberValue(in: json, keys: ["rrTirPrVal", "rrTirePressure"])
+                    let temp = DataManager.numberValue(in: json, keys: ["tirTemp", "tireTemp"])
+
+                    guard lf != nil || rf != nil || lr != nil || rr != nil else {
+                        loggerNet.warning("tire pressure payload has no recognized fields")
+                        return
+                    }
+                    self?.appData.tirePressure = TirePressure(lf: lf, rf: rf, lr: lr, rr: rr, temp: temp)
+                    loggerNet.debug("tire pressure updated")
+                case .failure(let error):
+                    loggerNet.error("failed to load tire pressure: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
     /// 云端车控（BLE 未连接时的兜底）
     func sendCloudControl(_ endpoint: BaojunEndpoint,
                           completion: @escaping (Result<Void, Error>) -> Void) {
@@ -338,6 +380,33 @@ extension DataManager {
         if let code = dict["code"] as? String, code != "0", code != "200", code.lowercased() != "success" {
             let message = (dict["message"] as? String) ?? (dict["msg"] as? String) ?? "接口返回异常 code=\(code)"
             return message
+        }
+        return nil
+    }
+
+    /// 在 JSON 里按多个候选字段名找数值（字符串形式的数字也能解析）
+    static func numberValue(in object: Any, keys: [String]) -> Double? {
+        for key in keys {
+            if let text = findAnyValue(in: object, key: key) {
+                if let value = Double(text) { return value }
+            }
+        }
+        return nil
+    }
+
+    static func findAnyValue(in object: Any, key: String) -> String? {
+        if let dict = object as? [String: Any] {
+            for (rawKey, value) in dict where String(describing: rawKey).lowercased() == key.lowercased() {
+                if let number = value as? NSNumber { return number.stringValue }
+                if let s = value as? String, s.isEmpty == false { return s }
+            }
+            for value in dict.values {
+                if let found = findAnyValue(in: value, key: key) { return found }
+            }
+        } else if let array = object as? [Any] {
+            for item in array {
+                if let found = findAnyValue(in: item, key: key) { return found }
+            }
         }
         return nil
     }

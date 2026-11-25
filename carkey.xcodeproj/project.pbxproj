@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AAAA1111000000000000C3D1 /* car3d in Resources */ = {isa = PBXBuildFile; fileRef = AAAA1111000000000000C3D2 /* car3d */; };
 		331F20AC2E84047100B19E7E /* carkey icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 331F20AB2E84047100B19E7E /* carkey icon.icon */; };
 		3345C9422E8924D1003D2691 /* LogView in Frameworks */ = {isa = PBXBuildFile; productRef = 3345C9412E8924D1003D2691 /* LogView */; };
 		335DD43B2E74426100B0CE75 /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 335DD43A2E74426100B0CE75 /* CoreBluetooth.framework */; };
@@ -55,6 +56,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AAAA1111000000000000C3D2 /* car3d */ = {isa = PBXFileReference; lastKnownFileType = folder; path = car3d; sourceTree = "<group>"; };
 		331325DF2E6E869100E86E52 /* carkey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = carkey.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		331325EC2E6E869200E86E52 /* carkeyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = carkeyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		331325F62E6E869200E86E52 /* carkeyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = carkeyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -140,6 +142,7 @@
 			isa = PBXGroup;
 			children = (
 				331325E12E6E869100E86E52 /* carkey */,
+				AAAA1111000000000000C3D2 /* car3d */,
 				331325EF2E6E869200E86E52 /* carkeyTests */,
 				331325F92E6E869200E86E52 /* carkeyUITests */,
 				33F907962FDA56CB00741A4F /* BaoJunKey Watch App */,
@@ -323,6 +326,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AAAA1111000000000000C3D1 /* car3d in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -22,6 +22,9 @@
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
   host.appendChild(renderer.domElement);
+  renderer.domElement.style.display = 'block';
+  renderer.domElement.style.width = '100%';
+  renderer.domElement.style.height = '100%';
 
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(36, 1, 0.1, 200);
@@ -64,7 +67,7 @@
     if (!w || !h) return;
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(w, h, false);
+    renderer.setSize(w, h, true);
   }
   window.addEventListener('resize', resize);
   window.addEventListener('orientationchange', resize);
@@ -132,7 +135,7 @@
     var size2 = box2.getSize(new THREE.Vector3());
     var radius = 0.5 * Math.sqrt(size2.x * size2.x + size2.y * size2.y + size2.z * size2.z);
     var fov = camera.fov * Math.PI / 180;
-    var distance = radius / Math.sin(fov / 2) * 1.3;
+    var distance = radius / Math.sin(fov / 2) * 1.62;
 
     HOME_TARGET.set(0, size2.y * 0.55, 0);
     HOME_POS.set(-distance * 0.60, size2.y * 0.55 + distance * 0.40, distance * 0.62);

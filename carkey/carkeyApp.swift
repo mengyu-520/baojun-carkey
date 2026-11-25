@@ -22,6 +22,14 @@ struct carkeyApp: App {
 
 	init() {
 		WatchSyncManager.shared.startSession()
+
+		#if DEBUG
+		// 仅用于 CI 模拟器截图：xcrun simctl launch ... -demoMode
+		if ProcessInfo.processInfo.arguments.contains("-demoMode") {
+			DataManager.shared.injectMockData()
+			BluetoothManager.shared.enableDemoSignal()
+		}
+		#endif
 	}
 
 	var body: some Scene {

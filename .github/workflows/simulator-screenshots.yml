@@ -1,0 +1,108 @@
+name: Simulator screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  shots:
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          ls /Applications | grep -i Xcode || true
+          for c in /Applications/Xcode_16.4.app /Applications/Xcode_16.3.app /Applications/Xcode_16.2.app /Applications/Xcode.app; do
+            if [ -d "$c" ]; then sudo xcode-select -s "$c"; break; fi
+          done
+          xcodebuild -version
+
+      - name: Resolve packages
+        run: xcodebuild -resolvePackageDependencies -project carkey.xcodeproj -scheme carkey
+
+      - name: Build for simulator (Debug)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project carkey.xcodeproj \
+            -scheme carkey \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            build 2>&1 | tee build-sim.log
+
+      - name: Boot simulator and install app
+        id: sim
+        run: |
+          set -e
+          APP=$(find build/Build/Products/Debug-iphonesimulator -maxdepth 1 -name "carkey.app" -type d | head -n 1)
+          echo "app path: $APP"
+          UDID=$(python3 - <<'PY'
+          import json, subprocess
+          data = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '-j']))
+          cands = []
+          for runtime, devs in data['devices'].items():
+              if 'iOS' not in runtime:
+                  continue
+              for d in devs:
+                  if d.get('isAvailable') and d.get('name', '').startswith('iPhone'):
+                      cands.append((runtime, d['name'], d['udid']))
+          cands.sort()
+          print(cands[-1][2] if cands else '')
+          PY
+          )
+          echo "device udid: $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override \
+            --time "9:41" \
+            --batteryState charged \
+            --batteryLevel 100 \
+            --wifiBars 3 \
+            --cellularBars 4 || true
+          xcrun simctl install "$UDID" "$APP"
+
+      - name: Screenshot 1 - login page
+        run: |
+          UDID="${{ steps.sim.outputs.udid }}"
+          mkdir -p screenshots
+          xcrun simctl launch "$UDID" com.mengyu.baojuncarkey || true
+          sleep 8
+          xcrun simctl io "$UDID" screenshot screenshots/01-login.png
+          ls -lh screenshots
+
+      - name: Screenshot 2 - car control with BLE signal
+        run: |
+          UDID="${{ steps.sim.outputs.udid }}"
+          xcrun simctl terminate "$UDID" com.mengyu.baojuncarkey || true
+          sleep 3
+          xcrun simctl launch "$UDID" com.mengyu.baojuncarkey -demoMode || true
+          sleep 10
+          xcrun simctl io "$UDID" screenshot screenshots/02-carcontrol.png
+          ls -lh screenshots
+
+      - name: Collect crash log if any
+        if: always()
+        run: |
+          mkdir -p screenshots
+          ls -lt ~/Library/Logs/DiagnosticReports | head -5 || true
+          cp ~/Library/Logs/DiagnosticReports/*.ips screenshots/ 2>/dev/null || true
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulator-screenshots
+          path: screenshots/
+          if-no-files-found: warn

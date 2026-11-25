@@ -1075,6 +1075,32 @@ struct UcuAuthorizationRequestFrame2 {
 
 // MARK: - Debug View (Unaltered)
 
+#if DEBUG
+extension BluetoothManager {
+	/// 仅用于 CI 模拟器截图：填充一组看起来真实的蓝牙信号数据
+	func enableDemoSignal() {
+		DispatchQueue.main.async {
+			self.autoUnlockEnabled = true
+			self.autoUnlockThreshold = -62
+			self.autoLockEnabled = false
+			self.autoLockThreshold = -82
+
+			let samples: [Double] = [
+				-86, -83, -80, -78, -76, -74, -73, -71, -70, -69,
+				-67.5, -66.8, -65.2, -64.1, -63.0, -62.4, -61.8, -61.5
+			]
+			self.rssiHistory = samples
+			self.rssi = -61
+			self.smoothedRSSI = -61.5
+			self.estimatedDistance = BleSignal.estimatedDistance(rssi: -61.5)
+			self.lastSeenAt = Date()
+			self.autoUnlockState = .nearby
+			self.lastAutoEvent = "\(BluetoothManager.timeString()) 已靠近，信号达标"
+		}
+	}
+}
+#endif
+
 /// 生成 8 位大写 hex 随机数（必须补零，否则帧内字段会错位）
 func GenerateRandomHex8() -> String {
 	let value = String(Int.random(in: 0...0xFFFF_FFFF), radix: 16, uppercase: true)

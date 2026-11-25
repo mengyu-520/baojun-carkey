@@ -167,7 +167,7 @@ struct SignalBarsView: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 6) {
-            ForEach(0 ..< 5, id: \.self) { index in
+            ForEach(0 ..< 4, id: \.self) { index in
                 Capsule()
                     .fill(index < bars ? barColor : Color.white.opacity(0.12))
                     .frame(maxWidth: .infinity)

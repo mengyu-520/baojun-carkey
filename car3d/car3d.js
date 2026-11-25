@@ -187,10 +187,10 @@
     var hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(camera.aspect, 0.01));
     var horizontalNeed = modelRadius / Math.sin(hFov / 2);
     var verticalNeed = modelRadius / Math.sin(vFov / 2);
-    var distance = Math.max(horizontalNeed, verticalNeed) * 1.16;
+    var distance = Math.max(horizontalNeed, verticalNeed) * 1.10;
 
     var dir = new THREE.Vector3(-0.62, 0.40, 0.66).normalize();
-    var target = new THREE.Vector3(0, modelHeight * 0.5, 0);
+    var target = new THREE.Vector3(0, modelHeight * 0.44, 0);
 
     HOME_TARGET.copy(target);
     HOME_POS.copy(target).addScaledVector(dir, distance);
@@ -214,6 +214,10 @@
     loader.parse(buffer, '', function (gltf) {
       // 用一层 wrapper 承载缩放/居中，避免模型的动画轨道改写 root 自身变换
       var inner = gltf.scene;
+      // 灯光投射到地面的贴片在卡片里会变成一块脏影，直接隐藏
+      inner.traverse(function (node) {
+        if (node.name && /Ground_Visual/i.test(node.name)) node.visible = false;
+      });
       gltfRoot = new THREE.Group();
       gltfRoot.add(inner);
       animations = gltf.animations || [];

@@ -187,7 +187,7 @@
     var hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(camera.aspect, 0.01));
     var horizontalNeed = modelRadius / Math.sin(hFov / 2);
     var verticalNeed = modelRadius / Math.sin(vFov / 2);
-    var distance = Math.max(horizontalNeed, verticalNeed) * 1.10;
+    var distance = Math.max(horizontalNeed, verticalNeed) * 1.22;
 
     var dir = new THREE.Vector3(-0.62, 0.40, 0.66).normalize();
     var target = new THREE.Vector3(0, modelHeight * 0.44, 0);
